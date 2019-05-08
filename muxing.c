@@ -629,13 +629,18 @@ int main(int argc, char **argv)
     }
 
     /* Write the stream header, if any. */
+//    av_dict_set(&opt, "fflags", "-autobsf", 0);
+//    av_dict_set(&opt, "movflags", "frag_custom+dash+delay_moov", 0);
+    av_dict_set(&opt, "movflags", "frag_keyframe+empty_moov", 0);
     ret = avformat_write_header(oc, &opt);
     if (ret < 0) {
         fprintf(stderr, "Error occurred when opening output file: %s\n",
                 av_err2str(ret));
         return 1;
     }
+    av_write_frame(oc, NULL);
 
+#if 0
     while (encode_video || encode_audio) {
         /* select the stream to encode */
         if (encode_video &&
@@ -646,6 +651,7 @@ int main(int argc, char **argv)
             encode_audio = !write_audio_frame(oc, &audio_st);
         }
     }
+#endif
 
     /* Write the trailer, if any. The trailer must be written before you
      * close the CodecContexts open when you wrote the header; otherwise
