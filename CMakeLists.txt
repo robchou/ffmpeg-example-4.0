@@ -15,13 +15,17 @@ link_directories(
 set(ffmpeg_example_source_files
     avio_dir_cmd.c
     avio_reading.c
-    decoding_encoding.c
+    decode_audio.c
+    decode_video.c
     demuxing_decoding.c
+    encode_audio.c
+    encode_video.c
     extract_mvs.c
     filter_audio.c
     filtering_audio.c
     filtering_video.c
     http_multiclient.c
+    hw_decode.c
     metadata.c
     muxing.c
     #qsvdec.c
