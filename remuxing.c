@@ -30,6 +30,7 @@
 
 #include <libavutil/timestamp.h>
 #include <libavformat/avformat.h>
+#include <libavutil/opt.h>
 
 static void log_packet(const AVFormatContext *fmt_ctx, const AVPacket *pkt, const char *tag)
 {
@@ -47,6 +48,7 @@ int main(int argc, char **argv)
 {
     AVOutputFormat *ofmt = NULL;
     AVFormatContext *ifmt_ctx = NULL, *ofmt_ctx = NULL;
+    AVDictionary *opts = NULL;
     AVPacket pkt;
     const char *in_filename, *out_filename;
     int ret, i;
@@ -85,6 +87,7 @@ int main(int argc, char **argv)
         ret = AVERROR_UNKNOWN;
         goto end;
     }
+    av_dict_set(&opts, "hls_segment_type", "fmp4", 0);
 
     stream_mapping_size = ifmt_ctx->nb_streams;
     stream_mapping = av_mallocz_array(stream_mapping_size, sizeof(*stream_mapping));
@@ -123,6 +126,11 @@ int main(int argc, char **argv)
         }
         out_stream->codecpar->codec_tag = 0;
     }
+    av_dict_set(&opts, "hls_flags", "delete_segments", 0);
+    av_dict_set(&opts, "hls_time", "5", 0);
+    av_dict_set(&opts, "hls_segment_type", "fmp4", 0);
+//    av_dict_set(&opts, "hls_playlist_type", "vod", 0);
+    av_dict_set(&opts, "hls_segment_filename", "test%d.m4s", 0);
     av_dump_format(ofmt_ctx, 0, out_filename, 1);
 
     if (!(ofmt->flags & AVFMT_NOFILE)) {
@@ -133,7 +141,7 @@ int main(int argc, char **argv)
         }
     }
 
-    ret = avformat_write_header(ofmt_ctx, NULL);
+    ret = avformat_write_header(ofmt_ctx, &opts);
     if (ret < 0) {
         fprintf(stderr, "Error occurred when opening output file\n");
         goto end;
