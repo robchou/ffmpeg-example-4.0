@@ -1,71 +1,53 @@
-cmake_minimum_required(VERSION 3.2)
+cmake_minimum_required(VERSION 2.8)
 project(ffmpeg-examples)
 
-set(ffmpeg_libs
-    avdevice
-    avformat
-    avfilter
-    avcodec
-    swresample
-    swscale
-    avutil
-    m
-   )
+find_package(PkgConfig REQUIRED)
+pkg_check_modules(FFMPEG REQUIRED libavcodec libavformat libavutil libswscale libswresample libavfilter)
 
+include_directories(
+    ${FFMPEG_INCLUDE_DIRS}
+    )
 
-add_executable(avio_dir_cmd avio_dir_cmd.c)
-target_link_libraries(avio_dir_cmd ${ffmpeg_libs})
+link_directories(
+    ${FFMPEG_LIBRARY_DIRS}
+    )
 
-add_executable(avio_reading avio_reading.c)
-target_link_libraries(avio_reading ${ffmpeg_libs})
-
-add_executable(decode_audio decode_audio.c)
-target_link_libraries(decode_audio ${ffmpeg_libs})
-
-add_executable(decode_video decode_video.c)
-target_link_libraries(decode_video ${ffmpeg_libs})
-
-add_executable(demuxing_decoding demuxing_decoding.c)
-target_link_libraries(demuxing_decoding ${ffmpeg_libs})
-
-add_executable(encode_audio encode_audio.c)
-target_link_libraries(encode_audio ${ffmpeg_libs})
-
-add_executable(encode_video encode_video.c)
-target_link_libraries(encode_video ${ffmpeg_libs})
-
-add_executable(extract_mvs extract_mvs.c)
-target_link_libraries(extract_mvs ${ffmpeg_libs})
-
-add_executable(filtering_video filtering_video.c)
-target_link_libraries(filtering_video ${ffmpeg_libs})
-
-add_executable(filtering_audio filtering_audio.c)
-target_link_libraries(filtering_audio ${ffmpeg_libs})
-
-add_executable(http_multiclient http_multiclient.c)
-target_link_libraries(http_multiclient ${ffmpeg_libs})
-
-add_executable(hw_decode hw_decode.c)
-target_link_libraries(hw_decode ${ffmpeg_libs})
-
-add_executable(metadata metadata.c)
-target_link_libraries(metadata ${ffmpeg_libs})
-
-add_executable(muxing muxing.c)
-target_link_libraries(muxing ${ffmpeg_libs})
-
-add_executable(remuxing remuxing.c)
-target_link_libraries(remuxing ${ffmpeg_libs})
-
-add_executable(resampling_audio resampling_audio.c)
-target_link_libraries(resampling_audio ${ffmpeg_libs})
-
-add_executable(scaling_video scaling_video.c)
-target_link_libraries(scaling_video ${ffmpeg_libs})
-
-add_executable(transcode_aac transcode_aac.c)
-target_link_libraries(transcode_aac ${ffmpeg_libs})
-
-add_executable(transcoding transcoding.c)
-target_link_libraries(transcoding ${ffmpeg_libs})
+set(ffmpeg_example_source_files
+    avio_dir_cmd.c
+    avio_reading.c
+    decode_audio.c
+    decode_video.c
+    demuxing_decoding.c
+    encode_audio.c
+    encode_video.c
+    extract_mvs.c
+    filter_audio.c
+    filtering_audio.c
+    filtering_video.c
+    http_multiclient.c
+    hw_decode.c
+    metadata.c
+    muxing.c
+    #qsvdec.c
+    remuxing.c
+    resampling_audio.c
+    scaling_video.c
+    transcode_aac.c
+    transcoding.c
+    vaapi_encode.c
+    vaapi_transcode.c
+    )
+foreach(example ${ffmpeg_example_source_files})
+    string(REPLACE ".c" "" exec ${example})
+    add_executable(${exec} ${example})
+    target_link_libraries(${exec}
+        ${FFMPEG_LIBRARIES}
+        sndio
+        asound
+        pthread
+        dl
+        va
+        z
+        m
+        )
+endforeach()
