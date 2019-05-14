@@ -44,7 +44,7 @@
 #include <libswresample/swresample.h>
 
 #define STREAM_DURATION   10.0
-#define STREAM_FRAME_RATE 25 /* 25 images/s */
+#define STREAM_FRAME_RATE 90000 /* 25 images/s */
 #define STREAM_PIX_FMT    AV_PIX_FMT_YUV420P /* default pix_fmt */
 
 #define SCALE_FLAGS SWS_BICUBIC
@@ -149,8 +149,8 @@ static void add_stream(OutputStream *ost, AVFormatContext *oc,
 
         c->bit_rate = 400000;
         /* Resolution must be a multiple of two. */
-        c->width    = 352;
-        c->height   = 288;
+        c->width    = 1280;
+        c->height   = 720;
         /* timebase: This is the fundamental unit of time (in seconds) in terms
          * of which frame timestamps are represented. For fixed-fps content,
          * timebase should be 1/framerate and timestamp increments should be
@@ -400,6 +400,8 @@ static void open_video(AVFormatContext *oc, AVCodec *codec, OutputStream *ost, A
     AVDictionary *opt = NULL;
 
     av_dict_copy(&opt, opt_arg, 0);
+    av_opt_set(c->priv_data, "profile", "baseline", 0);
+    av_opt_set(c->priv_data, "level", "30", 0);
 
     /* open the codec */
     ret = avcodec_open2(c, codec, &opt);
@@ -626,13 +628,18 @@ int main(int argc, char **argv)
     }
 
     /* Write the stream header, if any. */
+//    av_dict_set(&opt, "fflags", "-autobsf", 0);
+//    av_dict_set(&opt, "movflags", "frag_custom+dash+delay_moov", 0);
+    av_dict_set(&opt, "movflags", "frag_keyframe+empty_moov", 0);
     ret = avformat_write_header(oc, &opt);
     if (ret < 0) {
         fprintf(stderr, "Error occurred when opening output file: %s\n",
                 av_err2str(ret));
         return 1;
     }
+    av_write_frame(oc, NULL);
 
+#if 0
     while (encode_video || encode_audio) {
         /* select the stream to encode */
         if (encode_video &&
@@ -643,6 +650,7 @@ int main(int argc, char **argv)
             encode_audio = !write_audio_frame(oc, &audio_st);
         }
     }
+#endif
 
     /* Write the trailer, if any. The trailer must be written before you
      * close the CodecContexts open when you wrote the header; otherwise
