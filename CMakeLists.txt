@@ -42,6 +42,7 @@ foreach(example ${ffmpeg_example_source_files})
     add_executable(${exec} ${example})
     target_link_libraries(${exec}
         ${FFMPEG_LIBRARIES}
+        x264
         sndio
         asound
         pthread
