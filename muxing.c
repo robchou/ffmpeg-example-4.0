@@ -630,7 +630,8 @@ int main(int argc, char **argv)
     /* Write the stream header, if any. */
 //    av_dict_set(&opt, "fflags", "-autobsf", 0);
 //    av_dict_set(&opt, "movflags", "frag_custom+dash+delay_moov", 0);
-    av_dict_set(&opt, "movflags", "frag_keyframe+empty_moov", 0);
+    //av_dict_set(&opt, "movflags", "frag_keyframe+empty_moov", 0);
+    av_dict_set(&opt, "movflags", "empty_moov+default_base_moof", 0);
     ret = avformat_write_header(oc, &opt);
     if (ret < 0) {
         fprintf(stderr, "Error occurred when opening output file: %s\n",
