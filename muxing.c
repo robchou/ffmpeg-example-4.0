@@ -400,10 +400,13 @@ static void open_video(AVFormatContext *oc, AVCodec *codec, OutputStream *ost, A
     AVDictionary *opt = NULL;
 
     av_dict_copy(&opt, opt_arg, 0);
-    av_opt_set(c->priv_data, "profile", "baseline", 0);
-    av_opt_set(c->priv_data, "level", "30", 0);
+//    av_opt_set(c->priv_data, "profile", "baseline", 0);
+//    av_opt_set(c->priv_data, "level", "30", 0);
 
     /* open the codec */
+    c->refs = 2;
+    c->profile = FF_PROFILE_H264_BASELINE;
+    c->level = 30;
     ret = avcodec_open2(c, codec, &opt);
     av_dict_free(&opt);
     if (ret < 0) {
