@@ -43,6 +43,21 @@ static void log_packet(const AVFormatContext *fmt_ctx, const AVPacket *pkt, cons
            pkt->stream_index);
 }
 
+static av_always_inline void ffio_wfourcc(AVIOContext *pb, const uint8_t *s)
+{
+    avio_wl32(pb, MKTAG(s[0], s[1], s[2], s[3]));
+}
+
+static void write_styp(AVIOContext *pb)
+{
+    avio_wb32(pb, 24);
+    ffio_wfourcc(pb, "styp");
+    ffio_wfourcc(pb, "msdh");
+    avio_wb32(pb, 0); /* minor */
+    ffio_wfourcc(pb, "msdh");
+    ffio_wfourcc(pb, "msix");
+}
+
 int main(int argc, char **argv)
 {
     AVOutputFormat *ofmt = NULL;
@@ -54,6 +69,12 @@ int main(int argc, char **argv)
     int stream_index = 0;
     int *stream_mapping = NULL;
     int stream_mapping_size = 0;
+    int sequence = 0;
+    float target_duration = 4;
+    const char* prefix = "out%d.m4s";
+    int can_split = 1;
+    int64_t end_pts = 0;
+    char segment_filename[1024] = {0};
 
     if (argc < 3) {
         printf("usage: %s input output\n"
@@ -123,11 +144,11 @@ int main(int argc, char **argv)
         }
         out_stream->codecpar->codec_tag = 0;
     }
-    av_dict_set(&opts, "hls_flags", "delete_segments", 0);
-    av_dict_set(&opts, "hls_time", "5", 0);
-    av_dict_set(&opts, "hls_segment_type", "fmp4", 0);
+//    av_dict_set(&opts, "hls_flags", "delete_segments", 0);
+//    av_dict_set(&opts, "hls_time", "5", 0);
+//    av_dict_set(&opts, "hls_segment_type", "fmp4", 0);
 //    av_dict_set(&opts, "hls_playlist_type", "vod", 0);
-    av_dict_set(&opts, "hls_segment_filename", "test%d.m4s", 0);
+//    av_dict_set(&opts, "hls_segment_filename", "test%d.m4s", 0);
     av_dump_format(ofmt_ctx, 0, out_filename, 1);
 
     if (!(ofmt->flags & AVFMT_NOFILE)) {
@@ -138,6 +159,7 @@ int main(int argc, char **argv)
         }
     }
 
+    av_dict_set(&opts, "movflags", "empty_moov+default_base_moof", 0);
     ret = avformat_write_header(ofmt_ctx, &opts);
     if (ret < 0) {
         fprintf(stderr, "Error occurred when opening output file\n");
@@ -167,7 +189,23 @@ int main(int argc, char **argv)
         pkt.dts = av_rescale_q_rnd(pkt.dts, in_stream->time_base, out_stream->time_base, AV_ROUND_NEAR_INF|AV_ROUND_PASS_MINMAX);
         pkt.duration = av_rescale_q(pkt.duration, in_stream->time_base, out_stream->time_base);
         pkt.pos = -1;
-        log_packet(ofmt_ctx, &pkt, "out");
+        log_packet(ofmt_ctx, &pkt, "out\n");
+        can_split = out_stream->codecpar->codec_type == AVMEDIA_TYPE_VIDEO && (pkt.flags & AV_PKT_FLAG_KEY) && (pkt.pts - end_pts >= 200000);
+
+        if (can_split) {
+            memset(segment_filename, 0, 1024);
+            sequence++;
+            end_pts = pkt.pts;
+            fprintf(stdout, "ready to split\n");
+            ret = av_interleaved_write_frame(ofmt_ctx, NULL);
+            avio_flush(ofmt_ctx->pb);
+            avio_close(ofmt_ctx->pb);
+            sprintf(segment_filename, prefix, sequence);
+//            ret = avio_open(&ofmt_ctx->pb, segment_filename, AVIO_FLAG_WRITE);
+            av_dict_set(&opts, "movflags", "global_sidx", 0);
+            ret = ofmt_ctx->io_open(ofmt_ctx, &ofmt_ctx->pb, segment_filename, AVIO_FLAG_WRITE, &opts);
+            write_styp(ofmt_ctx->pb);
+        }
 
         ret = av_interleaved_write_frame(ofmt_ctx, &pkt);
         if (ret < 0) {
