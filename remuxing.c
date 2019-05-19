@@ -159,7 +159,7 @@ int main(int argc, char **argv)
         }
     }
 
-    av_dict_set(&opts, "movflags", "empty_moov+default_base_moof", 0);
+    av_dict_set(&opts, "movflags", "empty_moov+dash+default_base_moof", 0);
     ret = avformat_write_header(ofmt_ctx, &opts);
     if (ret < 0) {
         fprintf(stderr, "Error occurred when opening output file\n");
@@ -202,7 +202,7 @@ int main(int argc, char **argv)
             avio_close(ofmt_ctx->pb);
             sprintf(segment_filename, prefix, sequence);
 //            ret = avio_open(&ofmt_ctx->pb, segment_filename, AVIO_FLAG_WRITE);
-            av_dict_set(&opts, "movflags", "global_sidx", 0);
+//            av_dict_set(&opts, "movflags", "global_sidx", 0);
             ret = ofmt_ctx->io_open(ofmt_ctx, &ofmt_ctx->pb, segment_filename, AVIO_FLAG_WRITE, &opts);
             write_styp(ofmt_ctx->pb);
         }
